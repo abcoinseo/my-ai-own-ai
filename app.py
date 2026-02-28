@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify, render_template
 import sqlite3
+import wikipedia
+import os
 
 app = Flask(__name__)
 
-# init db
+# init database
 def init_db():
     conn = sqlite3.connect("memory.db")
     c = conn.cursor()
@@ -18,43 +20,50 @@ def init_db():
 
 init_db()
 
-# homepage UI
+# homepage
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# ask AI
+# AI answer system
 @app.route("/api/ai", methods=["POST"])
 def ai():
     question = request.json.get("message").lower()
 
     conn = sqlite3.connect("memory.db")
     c = conn.cursor()
+
+    # check local memory
     c.execute("SELECT answer FROM memory WHERE question=?", (question,))
     result = c.fetchone()
-    conn.close()
 
     if result:
-        return jsonify({"answer": result[0], "learned": True})
-    else:
+        conn.close()
+        return jsonify({"answer": result[0], "source": "memory"})
+
+    # search wikipedia
+    try:
+        wikipedia.set_lang("en")
+        answer = wikipedia.summary(question, sentences=2)
+
+        # save to memory
+        c.execute("INSERT OR REPLACE INTO memory VALUES (?,?)", (question, answer))
+        conn.commit()
+        conn.close()
+
         return jsonify({
-            "answer": "I don't know this yet. Please teach me below 👇",
-            "learned": False
+            "answer": answer,
+            "source": "wikipedia"
         })
 
-# teach AI
-@app.route("/api/teach", methods=["POST"])
-def teach():
-    question = request.json.get("question").lower()
-    answer = request.json.get("answer")
+    except:
+        conn.close()
+        return jsonify({
+            "answer": "Sorry vai, I couldn't find answer.",
+            "source": "none"
+        })
 
-    conn = sqlite3.connect("memory.db")
-    c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO memory VALUES (?,?)", (question, answer))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"status": "Learned successfully ✅"})
-
+# run
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
