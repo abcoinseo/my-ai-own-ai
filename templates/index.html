@@ -1,85 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Hanbak AI 🤖</title>
-<style>
-body {
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-  text-align: center;
-}
-
-.container {
-  width: 400px;
-  margin: auto;
-  margin-top: 50px;
-}
-
-input, button {
-  padding: 10px;
-  margin: 5px;
-  width: 90%;
-}
-
-button {
-  background: #3b82f6;
-  color: white;
-  border: none;
-}
-
-.chat {
-  background: #1e293b;
-  padding: 10px;
-  margin: 10px;
-}
-</style>
+<title>Hanbak AI 🌐</title>
 </head>
-<body>
+<body style="background:black;color:white;text-align:center">
 
-<div class="container">
-<h2>Hanbak Self Learning AI 🤖</h2>
+<h2>Hanbak AI (Wikipedia Powered)</h2>
 
-<input id="question" placeholder="Ask something..." />
-<button onclick="askAI()">Ask</button>
+<input id="q" placeholder="Ask anything..." />
+<button onclick="ask()">Ask</button>
 
-<div id="chat" class="chat"></div>
-
-<h3>Teach AI</h3>
-
-<input id="teachQ" placeholder="Question" />
-<input id="teachA" placeholder="Answer" />
-<button onclick="teachAI()">Teach</button>
-
-</div>
+<p id="answer"></p>
 
 <script>
-async function askAI() {
-  let q = document.getElementById("question").value;
+async function ask() {
+  let q = document.getElementById("q").value;
 
   let res = await fetch("/api/ai", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({message: q})
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({message:q})
   });
 
   let data = await res.json();
 
-  document.getElementById("chat").innerHTML =
-    "<b>You:</b> " + q + "<br><b>AI:</b> " + data.answer;
-}
-
-async function teachAI() {
-  let q = document.getElementById("teachQ").value;
-  let a = document.getElementById("teachA").value;
-
-  await fetch("/api/teach", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({question: q, answer: a})
-  });
-
-  alert("AI learned successfully!");
+  document.getElementById("answer").innerHTML =
+    "<b>Answer:</b> " + data.answer +
+    "<br><small>Source: " + data.source + "</small>";
 }
 </script>
 
